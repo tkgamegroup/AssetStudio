@@ -1,0 +1,1 @@
+AssetStudioGUI\bin\Debug\net472\AssetStudioGUI.exe redundancy_analyze C:\Client\Assets\StreamingAssets\StreamingResources D:\
