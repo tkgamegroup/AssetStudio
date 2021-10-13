@@ -132,7 +132,7 @@ namespace AssetStudioGUI
             return extractedCount;
         }
 
-        public static (string, List<TreeNode>) BuildAssetData()
+        public static (string, List<TreeNode>) BuildAssetData(List<AssetItem> outAssetItems = null)
         {
             StatusStripUpdate("Building asset list...");
 
@@ -144,9 +144,24 @@ namespace AssetStudioGUI
             Progress.Reset();
             foreach (var assetsFile in assetsManager.assetsFileList)
             {
-                foreach (var asset in assetsFile.Objects)
+                var objects = new List<Object>(assetsFile.Objects);
+                for (int ii = 0; ii < objects.Count; ii++)
+                {
+                    if (objects[ii].type == ClassIDType.AssetBundle)
+                    {
+                        var tmp = objects[0];
+                        objects[0] = objects[ii];
+                        objects[ii] = tmp;
+                        break;
+                    }
+                }
+                foreach (var asset in objects)
                 {
                     var assetItem = new AssetItem(asset);
+                    if (outAssetItems != null)
+                    {
+                        outAssetItems.Add(assetItem);
+                    }
                     objectAssetItemDic.Add(asset, assetItem);
                     assetItem.UniqueID = " #" + i;
                     var exportable = false;
@@ -247,6 +262,10 @@ namespace AssetStudioGUI
                 {
                     objectAssetItemDic[obj].Container = container;
                 }
+            }
+            if (outAssetItems != null)
+            {
+                return (null, null);
             }
             foreach (var tmp in exportableAssets)
             {
