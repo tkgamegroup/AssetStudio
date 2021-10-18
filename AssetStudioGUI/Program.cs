@@ -1,8 +1,7 @@
 using System;
 using System.IO;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using System.Diagnostics;
 using System.Windows.Forms;
 using AssetStudio;
 
@@ -78,14 +77,8 @@ namespace AssetStudioGUI
                                 Tuple<int, string, int> r;
                                 if (redundancies.TryGetValue(a.m_PathID, out r))
                                 {
-                                    if (r.Item2 == a.TypeString && r.Item3 == a.FullSize)
-                                    {
-                                        redundancies[a.m_PathID] = Tuple.Create(r.Item1 + 1, a.TypeString, (int)a.FullSize);
-                                    }
-                                    else
-                                    {
-                                        Console.WriteLine("!!");
-                                    }
+                                    Debug.Assert(r.Item2 == a.TypeString && r.Item3 == a.FullSize);
+                                    redundancies[a.m_PathID] = Tuple.Create(r.Item1 + 1, a.TypeString, (int)a.FullSize);
                                 }
                                 else
                                 {
