@@ -11,6 +11,9 @@ namespace AssetStudio
     {
         public string SpecifyUnityVersion;
         public List<SerializedFile> assetsFileList = new List<SerializedFile>();
+        public bool doLog = false;
+        public int assetBundlesCount = 0;
+        public long assetBundlesTotalSize = 0;
 
         internal Dictionary<string, int> assetsFileIndexCache = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         internal Dictionary<string, BinaryReader> resourceFileReaders = new Dictionary<string, BinaryReader>(StringComparer.OrdinalIgnoreCase);
@@ -21,6 +24,8 @@ namespace AssetStudio
 
         public void LoadFiles(params string[] files)
         {
+            assetBundlesCount = 0;
+            assetBundlesTotalSize = 0;
             var path = Path.GetDirectoryName(files[0]);
             MergeSplitAssets(path);
             var toReadFile = ProcessingSplitFiles(files.ToList());
@@ -29,6 +34,12 @@ namespace AssetStudio
 
         public void LoadFolder(string path)
         {
+            if (doLog)
+            {
+                Console.WriteLine(string.Format("Loading asset bundles in {0}", path));
+            }
+            assetBundlesCount = 0;
+            assetBundlesTotalSize = 0;
             MergeSplitAssets(path, true);
             var files = Directory.GetFiles(path, "*.*", SearchOption.AllDirectories).ToList();
             var toReadFile = ProcessingSplitFiles(files);
@@ -49,6 +60,10 @@ namespace AssetStudio
             {
                 LoadFile(importFiles[i]);
                 Progress.Report(i + 1, importFiles.Count);
+                if (doLog)
+                {
+                    Console.Write("\r{0}/{1}", i + 1, importFiles.Count);
+                }
             }
 
             importFiles.Clear();
@@ -68,6 +83,8 @@ namespace AssetStudio
                     LoadAssetsFile(reader);
                     break;
                 case FileType.BundleFile:
+                    assetBundlesCount++;
+                    assetBundlesTotalSize += new FileInfo(fullName).Length;
                     LoadBundleFile(reader);
                     break;
                 case FileType.WebFile:

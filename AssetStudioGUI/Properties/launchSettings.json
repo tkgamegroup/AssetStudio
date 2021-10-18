@@ -2,7 +2,7 @@
   "profiles": {
     "AssetStudioGUI": {
       "commandName": "Project",
-      "commandLineArgs": "redundancy_analyze C:\\Client\\Assets\\StreamingAssets\\StreamingResources D:\\"
+      "commandLineArgs": "redundancy_analyze1 C:\\Client\\Assets\\StreamingAssets D:\\AssetBundleAnalyze"
     }
   }
 }
