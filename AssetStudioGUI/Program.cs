@@ -143,55 +143,125 @@ namespace AssetStudioGUI
                                 oXL.Visible = true;
 
                                 var oWB = oXL.Workbooks.Add(Missing.Value);
-                                var oSheetGeneral = (Excel.Worksheet)oWB.ActiveSheet;
-                                oSheetGeneral.Name = "一般";
-                                oSheetGeneral.Cells[1, 1] = "包数量";
-                                oSheetGeneral.Cells[2, 1] = Studio.assetsManager.assetBundlesCount.ToString();
-                                oSheetGeneral.Cells[1, 2] = "总大小";
-                                oSheetGeneral.Cells[2, 2] = Studio.assetsManager.assetBundlesTotalSize.ToString();
 
-                                for (int i = 0; i < 10; i++)
                                 {
-                                    oSheetGeneral.Cells[1, 3 + i] = topSizes[i].a;
-                                    oSheetGeneral.Cells[2, 3 + i] = topSizes[i].b.ToString();
-                                }
+                                    var oSheet = (Excel.Worksheet)oWB.ActiveSheet;
+                                    oSheet.Name = "General";
+                                    oSheet.Cells[1, 1] = "Bundles Count";
+                                    oSheet.Cells[2, 1] = Studio.assetsManager.assetBundlesCount.ToString();
+                                    oSheet.Cells[1, 2] = "Bundles Total Size";
+                                    oSheet.Cells[2, 2] = Studio.assetsManager.assetBundlesTotalSize.ToString();
 
-                                oSheetGeneral.Range["A1", "L1"].EntireColumn.AutoFit();
-                                oSheetGeneral.Range["B2", "L2"].NumberFormat = ExcelFileSizeFmt;
-                            }
-
-                            var assetsFile = new StreamWriter(args[3] + "/Assets List.txt");
-                            assetsFile.WriteLine("PathID\tName\tContainer\tAsset Bundle\tType\tSize");
-                            string ab_name = "";
-                            foreach (var a in assetItems)
-                            {
-                                if (a.Type == ClassIDType.AssetBundleManifest)
-                                {
-                                    continue;
-                                }
-                                if (a.Type == ClassIDType.AssetBundle)
-                                {
-                                    ab_name = a.Text;
-                                    continue;
-                                }
-                                assetsFile.WriteLine(string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}",
-                                   a.m_PathID, a.Text, a.Container, ab_name, a.TypeString, a.FullSize));
-                            }
-                            assetsFile.Close();
-
-                            var redundanciesFile = new StreamWriter(args[3] + "/Redundancies List.txt");
-                            redundanciesFile.WriteLine("PathID\tCount\tType\tSize\tTotal Size");
-                            foreach (var r in redundancies)
-                            {
-                                foreach (var i in r.Value)
-                                {
-                                    if (i.count > 1)
+                                    for (int i = 0; i < 10; i++)
                                     {
-                                        redundanciesFile.WriteLine(string.Format("{0}\t{1}\t{2}\t{3}\t{4}", r.Key, i.count, i.type, i.size, i.size * i.count));
+                                        oSheet.Cells[1, 3 + i] = topSizes[i].a;
+                                        oSheet.Cells[2, 3 + i] = topSizes[i].b.ToString();
                                     }
+
+                                    oSheet.Range["A1", "L1"].EntireColumn.AutoFit();
+                                    oSheet.Range["B2", "L2"].NumberFormat = ExcelFileSizeFmt;
+
+                                    var chartObjects = (Excel.ChartObjects)oSheet.ChartObjects();
+                                    var chart = chartObjects.Add(10, 40, 400, 400).Chart;
+                                    chart.ChartType = Excel.XlChartType.xlPie;
+                                    chart.SetSourceData(oSheet.Range["C1", "L2"]);
+                                }
+
+                                {
+                                    var oSheet = (Excel.Worksheet)oWB.Sheets.Add();
+                                    oSheet.Name = "Assets";
+                                    oSheet.Cells[1, 1] = "Name";
+                                    oSheet.Cells[1, 2] = "Container";
+                                    oSheet.Cells[1, 3] = "Bundle";
+                                    oSheet.Cells[1, 4] = "Type";
+                                    oSheet.Cells[1, 5] = "Size";
+                                    oSheet.Cells[1, 6] = "PathID";
+
+                                    var first_row = (Excel.Range)oSheet.Rows[1];
+                                    first_row.AutoFilter2(1, Type.Missing, Excel.XlAutoFilterOperator.xlAnd, Type.Missing, true);
+
+                                    oSheet.Range["A2"].EntireColumn.NumberFormat = "@";
+                                    oSheet.Range["E2"].EntireColumn.NumberFormat = ExcelFileSizeFmt;
+                                    oSheet.Range["F2"].EntireColumn.NumberFormat = "@";
+
+                                    string ab_name = "";
+                                    int i = 2;
+                                    foreach (var a in assetItems)
+                                    {
+                                        if (a.Type == ClassIDType.AssetBundleManifest)
+                                        {
+                                            continue;
+                                        }
+                                        if (a.Type == ClassIDType.AssetBundle)
+                                        {
+                                            ab_name = a.Text;
+                                            continue;
+                                        }
+                                        oSheet.Cells[i, 1] = a.Text;
+                                        oSheet.Cells[i, 2] = a.Container;
+                                        oSheet.Cells[i, 3] = ab_name;
+                                        oSheet.Cells[i, 4] = a.TypeString;
+                                        oSheet.Cells[i, 5] = a.FullSize.ToString();
+                                        oSheet.Cells[i, 6] = a.m_PathID.ToString();
+                                        i++;
+                                    }
+
+                                    var header = oSheet.Range["A1", "F1"];
+                                    header.EntireColumn.AutoFit();
+                                    header.Interior.Color = System.Drawing.Color.FromArgb(84, 130, 53);
+                                    header.Font.Color = System.Drawing.Color.FromArgb(255, 255, 255);
+                                    header.Font.Bold = true;
+
+                                    Excel.FormatCondition format = oSheet.UsedRange.FormatConditions.Add(Excel.XlFormatConditionType.xlExpression, Excel.XlFormatConditionOperator.xlEqual, "=MOD(ROW(),2)=0");
+                                    format.Interior.Color = System.Drawing.Color.FromArgb(226, 239, 218);
+                                }
+
+                                {
+                                    var oSheet = (Excel.Worksheet)oWB.Sheets.Add();
+                                    oSheet.Name = "Redundancies";
+                                    oSheet.Cells[1, 1] = "Name";
+                                    oSheet.Cells[1, 2] = "Type";
+                                    oSheet.Cells[1, 3] = "Count";
+                                    oSheet.Cells[1, 4] = "Size";
+                                    oSheet.Cells[1, 5] = "Total Size";
+                                    oSheet.Cells[1, 6] = "PathID";
+
+                                    var first_row = (Excel.Range)oSheet.Rows[1];
+                                    first_row.AutoFilter2(1, Type.Missing, Excel.XlAutoFilterOperator.xlAnd, Type.Missing, true);
+
+                                    oSheet.Range["A2"].EntireColumn.NumberFormat = "@";
+                                    oSheet.Range["D2"].EntireColumn.NumberFormat = ExcelFileSizeFmt;
+                                    oSheet.Range["E2"].EntireColumn.NumberFormat = ExcelFileSizeFmt;
+                                    oSheet.Range["F2"].EntireColumn.NumberFormat = "@";
+
+                                    int i = 2;
+                                    foreach (var r in redundancies)
+                                    {
+                                        foreach (var ai in r.Value)
+                                        {
+                                            if (ai.count > 1)
+                                            {
+                                                oSheet.Cells[i, 1] = ai.name;
+                                                oSheet.Cells[i, 2] = ai.type;
+                                                oSheet.Cells[i, 3] = ai.count.ToString();
+                                                oSheet.Cells[i, 4] = ai.size;
+                                                oSheet.Cells[i, 5] = (ai.size * ai.count).ToString();
+                                                oSheet.Cells[i, 6] = r.Key.ToString();
+                                                i++;
+                                            }
+                                        }
+                                    }
+
+                                    var header = oSheet.Range["A1", "F1"];
+                                    header.EntireColumn.AutoFit();
+                                    header.Interior.Color = System.Drawing.Color.FromArgb(84, 130, 53);
+                                    header.Font.Color = System.Drawing.Color.FromArgb(255, 255, 255);
+                                    header.Font.Bold = true;
+
+                                    Excel.FormatCondition format = oSheet.UsedRange.FormatConditions.Add(Excel.XlFormatConditionType.xlExpression, Excel.XlFormatConditionOperator.xlEqual, "=MOD(ROW(),2)=0");
+                                    format.Interior.Color = System.Drawing.Color.FromArgb(226, 239, 218);
                                 }
                             }
-                            redundanciesFile.Close();
                         }
                     }
                     return;
