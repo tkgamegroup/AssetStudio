@@ -13,6 +13,18 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+	  <COMReference Include="Microsoft.Office.Interop.Excel">
+	    <WrapperTool>tlbimp</WrapperTool>
+	    <VersionMinor>9</VersionMinor>
+	    <VersionMajor>1</VersionMajor>
+	    <Guid>00020813-0000-0000-c000-000000000046</Guid>
+	    <Lcid>0</Lcid>
+	    <Isolated>false</Isolated>
+	    <EmbedInteropTypes>true</EmbedInteropTypes>
+	  </COMReference>
+	</ItemGroup>
+
+	<ItemGroup>
 		<ProjectReference Include="..\AssetStudioUtility\AssetStudioUtility.csproj" />
 		<ProjectReference Include="..\AssetStudio\AssetStudio.csproj" />
 	</ItemGroup>
@@ -56,6 +68,10 @@
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
 		<PackageReference Include="OpenTK" Version="3.1.0" />
 		<PackageReference Include="OpenTK.GLControl" Version="3.1.0" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Reference Include="Microsoft.CSharp" />
 	</ItemGroup>
 
 	<Target Name="CustomAfterBuild" AfterTargets="AfterBuild">
