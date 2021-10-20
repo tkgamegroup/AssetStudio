@@ -11,7 +11,6 @@ namespace AssetStudio
     {
         public string SpecifyUnityVersion;
         public List<SerializedFile> assetsFileList = new List<SerializedFile>();
-        public bool doLog = false;
         public int assetBundlesCount = 0;
         public long assetBundlesTotalSize = 0;
 
@@ -34,10 +33,6 @@ namespace AssetStudio
 
         public void LoadFolder(string path)
         {
-            if (doLog)
-            {
-                Console.WriteLine(string.Format("Loading asset bundles in {0}", path));
-            }
             assetBundlesCount = 0;
             assetBundlesTotalSize = 0;
             MergeSplitAssets(path, true);
@@ -60,10 +55,6 @@ namespace AssetStudio
             {
                 LoadFile(importFiles[i]);
                 Progress.Report(i + 1, importFiles.Count);
-                if (doLog)
-                {
-                    Console.Write("\r{0}/{1}", i + 1, importFiles.Count);
-                }
             }
 
             importFiles.Clear();
