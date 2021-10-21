@@ -3,27 +3,16 @@
     public static class Progress
     {
         public static IProgress Default = new DummyProgress();
-        private static int preValue;
+        public static bool stopTask = false;
 
-        public static void Reset()
+        public static void Reset(string task)
         {
-            preValue = 0;
-            Default.Report(0);
+            Default.Reset(task);
         }
 
         public static void Report(int current, int total)
         {
-            var value = (int)(current * 100f / total);
-            Report(value);
-        }
-
-        private static void Report(int value)
-        {
-            if (value > preValue)
-            {
-                preValue = value;
-                Default.Report(value);
-            }
+            Default.Report(current, total);
         }
     }
 }

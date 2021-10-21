@@ -1,8 +1,8 @@
 using System;
 using System.IO;
 using System.Collections.Generic;
-using System.Reflection;
 using System.Windows.Forms;
+using System.Threading;
 using AssetStudio;
 using Excel = Microsoft.Office.Interop.Excel;
 
@@ -56,6 +56,8 @@ namespace AssetStudioGUI
                             inputDir = fbd.SelectedPath;
                         }
                     }
+                    if (!Directory.Exists(inputDir))
+                        return;
                     {
                         var sfd = new SaveFileDialog();
                         sfd.Filter = "excel|*.xlsm";
@@ -66,12 +68,14 @@ namespace AssetStudioGUI
                         }
                     }
 
-                    if (Directory.Exists(inputDir))
-                    {
+                    var oXL = new Excel.Application();
+
+                    var cliDialog = new CLIDialog();
+                    cliDialog.Show();
+
+                    new Thread(() => {
                         try
                         {
-                            var oXL = new Excel.Application();
-
                             var oWB = oXL.Workbooks.Open(Directory.GetCurrentDirectory() + "\\template.xlsm");
 
                             Studio.assetsManager.LoadFolder(inputDir);
@@ -150,8 +154,16 @@ namespace AssetStudioGUI
 
                                 for (int i = 0; i < 10; i++)
                                 {
-                                    oSheet.Cells[1, 3 + i] = topSizes[i].a;
-                                    oSheet.Cells[2, 3 + i] = topSizes[i].b.ToString();
+                                    if (i < topSizes.Count)
+                                    {
+                                        oSheet.Cells[1, 3 + i] = topSizes[i].a;
+                                        oSheet.Cells[2, 3 + i] = topSizes[i].b.ToString();
+                                    }
+                                    else
+                                    {
+                                        oSheet.Cells[1, 3 + i] = "NULL_" + i.ToString();
+                                        oSheet.Cells[2, 3 + i] = "0";
+                                    }
                                 }
 
                                 var chartObjects = (Excel.ChartObjects)oSheet.ChartObjects();
@@ -168,8 +180,11 @@ namespace AssetStudioGUI
 
                                 string ab_name = "";
                                 int i = 2;
+                                Progress.Reset("Writing assets into excel");
                                 foreach (var a in assetItems)
                                 {
+                                    if (Progress.stopTask) return;
+
                                     if (a.Type == ClassIDType.AssetBundleManifest)
                                     {
                                         continue;
@@ -186,6 +201,7 @@ namespace AssetStudioGUI
                                     oSheet.Cells[i, 5] = a.FullSize.ToString();
                                     oSheet.Cells[i, 6] = a.m_PathID.ToString();
                                     i++;
+                                    Progress.Report(i - 1, assetItems.Count);
                                 }
 
                                 var header = (Excel.Range)oSheet.Rows[1];
@@ -196,10 +212,13 @@ namespace AssetStudioGUI
                                 var oSheet = (Excel.Worksheet)oWB.Sheets["Redundancies"];
 
                                 int i = 2;
+                                Progress.Reset("Writing redundancies into excel");
                                 foreach (var r in redundancies)
                                 {
                                     foreach (var ai in r.Value)
                                     {
+                                        if (Progress.stopTask) return;
+
                                         if (ai.count > 1)
                                         {
                                             oSheet.Cells[i, 1] = ai.name;
@@ -209,6 +228,7 @@ namespace AssetStudioGUI
                                             oSheet.Cells[i, 5] = (ai.size * ai.count).ToString();
                                             oSheet.Cells[i, 6] = r.Key.ToString();
                                             i++;
+                                            Progress.Report(i - 1, redundancies.Count);
                                         }
                                     }
                                 }
@@ -217,14 +237,18 @@ namespace AssetStudioGUI
                                 header.EntireColumn.AutoFit();
                             }
 
-                            oXL.Visible = true;
                             oWB.SaveAs(savePath);
                         }
                         catch (Exception e)
                         {
                             MessageBox.Show("Remeber to save your excel!!!\nThe exception is:\n" + e.Message, "Exception occured!!", MessageBoxButtons.OK, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button1, MessageBoxOptions.DefaultDesktopOnly);
                         }
-                    }
+
+                        oXL.Visible = true;
+                        Application.Exit();
+                    }).Start();
+
+                    Application.Run();
                     return;
                 }
             }

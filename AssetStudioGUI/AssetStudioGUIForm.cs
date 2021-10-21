@@ -104,7 +104,7 @@ namespace AssetStudioGUI
 
             logger = new GUILogger(StatusStripUpdate);
             Logger.Default = logger;
-            Progress.Default = new GUIProgress(SetProgressBarValue);
+            Progress.Default = new GUIProgress(SetProgressBarValue, SetProgressBarTask);
             Studio.StatusStripUpdate = StatusStripUpdate;
         }
 
@@ -356,7 +356,7 @@ namespace AssetStudioGUI
                     var savePath = saveFolderDialog.Folder;
                     var count = classesListView.Items.Count;
                     int i = 0;
-                    Progress.Reset();
+                    Progress.Reset("");
                     foreach (TypeTreeItem item in classesListView.Items)
                     {
                         var versionPath = Path.Combine(savePath, item.Group.Header);
@@ -1194,8 +1194,9 @@ namespace AssetStudioGUI
             textPreviewBox.Visible = true;
         }
 
-        private void SetProgressBarValue(int value)
+        private void SetProgressBarValue(int current, int total)
         {
+            var value = (int)(current * 100f / total);
             if (InvokeRequired)
             {
                 BeginInvoke(new Action(() => { progressBar1.Value = value; }));
@@ -1204,6 +1205,10 @@ namespace AssetStudioGUI
             {
                 progressBar1.Value = value;
             }
+        }
+
+        private void SetProgressBarTask(string task)
+        {
         }
 
         private void StatusStripUpdate(string statusText)

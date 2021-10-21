@@ -43,7 +43,7 @@ namespace AssetStudioGUI
         public static int ExtractFolder(string path, string savePath)
         {
             int extractedCount = 0;
-            Progress.Reset();
+            Progress.Reset("");
             var files = Directory.GetFiles(path, "*.*", SearchOption.AllDirectories);
             for (int i = 0; i < files.Length; i++)
             {
@@ -59,7 +59,7 @@ namespace AssetStudioGUI
         public static int ExtractFile(string[] fileNames, string savePath)
         {
             int extractedCount = 0;
-            Progress.Reset();
+            Progress.Reset("");
             for (var i = 0; i < fileNames.Length; i++)
             {
                 var fileName = fileNames[i];
@@ -141,7 +141,7 @@ namespace AssetStudioGUI
             var objectAssetItemDic = new Dictionary<Object, AssetItem>(objectCount);
             var containers = new List<(PPtr<Object>, string)>();
             int i = 0;
-            Progress.Reset();
+            Progress.Reset("Buinlding asset list");
             foreach (var assetsFile in assetsManager.assetsFileList)
             {
                 var objects = new List<Object>(assetsFile.Objects);
@@ -157,6 +157,8 @@ namespace AssetStudioGUI
                 }
                 foreach (var asset in objects)
                 {
+                    if (Progress.stopTask) return (null, null);
+
                     var assetItem = new AssetItem(asset);
                     if (outAssetItems != null)
                     {
@@ -281,7 +283,7 @@ namespace AssetStudioGUI
             var treeNodeDictionary = new Dictionary<GameObject, GameObjectTreeNode>();
             var assetsFileCount = assetsManager.assetsFileList.Count;
             int j = 0;
-            Progress.Reset();
+            Progress.Reset("");
             foreach (var assetsFile in assetsManager.assetsFileList)
             {
                 var fileNode = new GameObjectTreeNode(assetsFile.fileName); //RootNode
@@ -398,7 +400,7 @@ namespace AssetStudioGUI
                 int toExportCount = toExportAssets.Count;
                 int exportedCount = 0;
                 int i = 0;
-                Progress.Reset();
+                Progress.Reset("");
                 foreach (var asset in toExportAssets)
                 {
                     string exportPath;
@@ -487,7 +489,7 @@ namespace AssetStudioGUI
             {
                 Thread.CurrentThread.CurrentCulture = new CultureInfo("en-US");
 
-                Progress.Reset();
+                Progress.Reset("");
 
                 switch (exportListType)
                 {
@@ -532,7 +534,7 @@ namespace AssetStudioGUI
             {
                 var count = nodes.Cast<TreeNode>().Sum(x => x.Nodes.Count);
                 int k = 0;
-                Progress.Reset();
+                Progress.Reset("");
                 foreach (GameObjectTreeNode node in nodes)
                 {
                     //遍历一级子节点
@@ -600,7 +602,7 @@ namespace AssetStudioGUI
         {
             ThreadPool.QueueUserWorkItem(state =>
             {
-                Progress.Reset();
+                Progress.Reset("");
                 StatusStripUpdate($"Exporting {animator.Text}");
                 try
                 {
@@ -630,7 +632,7 @@ namespace AssetStudioGUI
                 {
                     var count = gameObjects.Count;
                     int i = 0;
-                    Progress.Reset();
+                    Progress.Reset("");
                     foreach (var gameObject in gameObjects)
                     {
                         StatusStripUpdate($"Exporting {gameObject.m_Name}");
@@ -664,7 +666,7 @@ namespace AssetStudioGUI
             ThreadPool.QueueUserWorkItem(state =>
             {
                 var name = Path.GetFileName(exportPath);
-                Progress.Reset();
+                Progress.Reset("");
                 StatusStripUpdate($"Exporting {name}");
                 try
                 {

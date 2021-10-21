@@ -7,11 +7,13 @@ namespace AssetStudio
 {
     public interface IProgress
     {
-        void Report(int value);
+        void Reset(string task);
+        void Report(int current, int total);
     }
 
     public sealed class DummyProgress : IProgress
     {
-        public void Report(int value) { }
+        public void Reset(string task) { }
+        public void Report(int current, int total) { }
     }
 }

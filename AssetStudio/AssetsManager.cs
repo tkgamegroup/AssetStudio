@@ -49,10 +49,11 @@ namespace AssetStudio
                 importFilesHash.Add(Path.GetFileName(file));
             }
 
-            Progress.Reset();
+            Progress.Reset("Loading asset/AB files");
             //use a for loop because list size can change
             for (var i = 0; i < importFiles.Count; i++)
             {
+                if (Progress.stopTask) return;
                 LoadFile(importFiles[i]);
                 Progress.Report(i + 1, importFiles.Count);
             }
@@ -264,11 +265,13 @@ namespace AssetStudio
 
             var progressCount = assetsFileList.Sum(x => x.m_Objects.Count);
             int i = 0;
-            Progress.Reset();
+            Progress.Reset("Reading assets");
             foreach (var assetsFile in assetsFileList)
             {
                 foreach (var objectInfo in assetsFile.m_Objects)
                 {
+                    if (Progress.stopTask) return;
+
                     var objectReader = new ObjectReader(assetsFile.reader, assetsFile, objectInfo);
                     try
                     {
