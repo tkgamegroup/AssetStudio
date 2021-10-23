@@ -10,18 +10,20 @@ namespace AssetStudioGUI
 {
     static class Program
     {
-        class AssetIdentifier
+        class RedundantAsset
         {
             public string type;
             public string name;
             public int size;
             public int count = 1;
+            public string pathID;
 
-            public AssetIdentifier(string _type, string _name, int _size)
+            public RedundantAsset(string type, string name, int size, string pathID)
             {
-                type = _type;
-                name = _name;
-                size = _size;
+                this.type = type;
+                this.name = name;
+                this.size = size;
+                this.pathID = pathID;
             }
         }
 
@@ -75,7 +77,7 @@ namespace AssetStudioGUI
                     var assetItems = new List<AssetItem>();
                     Studio.BuildAssetData(assetItems);
 
-                    var redundancies = new Dictionary<long, List<AssetIdentifier>>();
+                    var redundancies_map = new Dictionary<long, List<RedundantAsset>>();
                     foreach (var a in assetItems)
                     {
                         if (a.Type == ClassIDType.AssetBundle || a.Type == ClassIDType.AssetBundleManifest ||
@@ -90,7 +92,7 @@ namespace AssetStudioGUI
                         {
                             continue;
                         }
-                        if (redundancies.TryGetValue(a.m_PathID, out var list))
+                        if (redundancies_map.TryGetValue(a.m_PathID, out var list))
                         {
                             bool found = false;
                             foreach (var i in list)
@@ -103,65 +105,120 @@ namespace AssetStudioGUI
                             }
                             if (!found)
                             {
-                                list.Add(new AssetIdentifier(a.TypeString, a.Text, (int)a.FullSize));
+                                list.Add(new RedundantAsset(a.TypeString, a.Text, (int)a.FullSize, a.m_PathID.ToString()));
                             }
                         }
                         else
                         {
-                            var new_list = new List<AssetIdentifier>();
-                            new_list.Add(new AssetIdentifier(a.TypeString, a.Text, (int)a.FullSize));
-                            redundancies.Add(a.m_PathID, new_list);
+                            var new_list = new List<RedundantAsset>();
+                            new_list.Add(new RedundantAsset(a.TypeString, a.Text, (int)a.FullSize, a.m_PathID.ToString()));
+                            redundancies_map.Add(a.m_PathID, new_list);
                         }
                     }
-
-                    var topSizes = new List<StringLongPair>();
-                    foreach (var a in assetItems)
+                    var redundancies = new List<RedundantAsset>();
+                    foreach (var r in redundancies_map)
                     {
-                        bool new_type = true;
-                        foreach (var i in topSizes)
+                        foreach (var ai in r.Value)
                         {
-                            if (i.a == a.TypeString)
+                            if (ai.count > 1)
                             {
-                                i.b += a.FullSize;
-                                new_type = false;
-                                break;
+                                redundancies.Add(ai);
                             }
                         }
-                        if (new_type)
-                        {
-                            topSizes.Add(new StringLongPair(a.TypeString, a.FullSize));
-                        }
                     }
-                    topSizes.Sort(delegate (StringLongPair a, StringLongPair b)
-                    {
-                        if (a.b == b.b) return 0;
-                        else if (a.b < b.b) return 1;
-                        else return -1;
-                    });
 
                     {
                         var oSheet = (Excel.Worksheet)oWB.Sheets["General"];
-                        oSheet.Cells[2, 1] = Studio.assetsManager.assetBundlesCount.ToString();
+                        oSheet.Cells[1, 2] = Studio.assetsManager.assetBundlesCount.ToString();
                         oSheet.Cells[2, 2] = Studio.assetsManager.assetBundlesTotalSize.ToString();
+
+                        var topSizes = new List<StringLongPair>();
+
+                        foreach (var a in assetItems)
+                        {
+                            bool new_type = true;
+                            foreach (var i in topSizes)
+                            {
+                                if (i.a == a.TypeString)
+                                {
+                                    i.b += a.FullSize;
+                                    new_type = false;
+                                    break;
+                                }
+                            }
+                            if (new_type)
+                            {
+                                topSizes.Add(new StringLongPair(a.TypeString, a.FullSize));
+                            }
+                        }
+                        topSizes.Sort(delegate (StringLongPair a, StringLongPair b)
+                        {
+                            if (a.b == b.b) return 0;
+                            else if (a.b < b.b) return 1;
+                            else return -1;
+                        });
 
                         for (int i = 0; i < 10; i++)
                         {
                             if (i < topSizes.Count)
                             {
-                                oSheet.Cells[1, 3 + i] = topSizes[i].a;
-                                oSheet.Cells[2, 3 + i] = topSizes[i].b.ToString();
+                                oSheet.Cells[4 + i, 1] = topSizes[i].a;
+                                oSheet.Cells[4 + i, 2] = topSizes[i].b.ToString();
                             }
                             else
                             {
-                                oSheet.Cells[1, 3 + i] = "NULL_" + i.ToString();
-                                oSheet.Cells[2, 3 + i] = "0";
+                                oSheet.Cells[4 + i, 1] = "NULL_" + i.ToString();
+                                oSheet.Cells[4 + i, 2] = "0";
+                            }
+                        }
+
+                        topSizes.Clear();
+
+                        foreach (var a in redundancies)
+                        {
+                            bool new_type = true;
+                            foreach (var i in topSizes)
+                            {
+                                if (i.a == a.type)
+                                {
+                                    i.b += a.size * (a.count - 1);
+                                    new_type = false;
+                                    break;
+                                }
+                            }
+                            if (new_type)
+                            {
+                                topSizes.Add(new StringLongPair(a.type, a.size * (a.count - 1)));
+                            }
+                        }
+                        topSizes.Sort(delegate (StringLongPair a, StringLongPair b)
+                        {
+                            if (a.b == b.b) return 0;
+                            else if (a.b < b.b) return 1;
+                            else return -1;
+                        });
+
+                        for (int i = 0; i < 10; i++)
+                        {
+                            if (i < topSizes.Count)
+                            {
+                                oSheet.Cells[15 + i, 1] = topSizes[i].a;
+                                oSheet.Cells[15 + i, 2] = topSizes[i].b.ToString();
+                            }
+                            else
+                            {
+                                oSheet.Cells[15 + i, 1] = "NULL_" + i.ToString();
+                                oSheet.Cells[15 + i, 2] = "0";
                             }
                         }
 
                         var chartObjects = (Excel.ChartObjects)oSheet.ChartObjects();
-                        var chart = chartObjects.Add(10, 40, 400, 400).Chart;
-                        chart.ChartType = Excel.XlChartType.xlPie;
-                        chart.SetSourceData(oSheet.Range["C1", "L2"]);
+                        var chart1 = chartObjects.Add(200, 10, 400, 200).Chart;
+                        chart1.ChartType = Excel.XlChartType.xlPie;
+                        chart1.SetSourceData(oSheet.Range["A4", "B13"]);
+                        var chart2 = chartObjects.Add(200, 250, 400, 200).Chart;
+                        chart2.ChartType = Excel.XlChartType.xlPie;
+                        chart2.SetSourceData(oSheet.Range["A15", "B24"]);
 
                         var header = (Excel.Range)oSheet.Rows[1];
                         header.EntireColumn.AutoFit();
@@ -216,45 +273,38 @@ namespace AssetStudioGUI
                     }
 
                     {
-                        var oSheet = (Excel.Worksheet)oWB.Sheets["Redundancies"];
+                        var oSheet = (Excel.Worksheet)oWB.Sheets["redundancies"];
 
                         int i = 2;
                         int j = 0;
                         string[,] staging = new string[128, 6];
-                        Progress.Reset("Writing redundancies into excel");
+                        Progress.Reset("Writing redundancies_map into excel");
                         int p = 0;
-                        foreach (var r in redundancies)
+                        foreach (var ai in redundancies)
                         {
-                            foreach (var ai in r.Value)
-                            {
-                                if (Progress.stopTask) return;
+                            if (Progress.stopTask) return;
 
-                                if (ai.count > 1)
-                                {
-                                    staging[j, 0] = ai.name;
-                                    staging[j, 1] = ai.type;
-                                    staging[j, 2] = ai.count.ToString();
-                                    staging[j, 3] = ai.size.ToString();
-                                    staging[j, 4] = (ai.size * ai.count).ToString();
-                                    staging[j, 5] = r.Key.ToString();
-                                    j++;
-                                    if (j >= 128)
-                                    {
-                                        oSheet.Range["A" + i, "F" + (i + j - 1)].Value2 = staging;
-                                        i += j;
-                                        j = 0;
-                                    }
-                                }
+                            staging[j, 0] = ai.name;
+                            staging[j, 1] = ai.type;
+                            staging[j, 2] = ai.count.ToString();
+                            staging[j, 3] = ai.size.ToString();
+                            staging[j, 4] = (ai.size * (ai.count - 1)).ToString();
+                            staging[j, 5] = ai.pathID;
+                            j++;
+                            if (j >= 128)
+                            {
+                                oSheet.Range["A" + i, "F" + (i + j - 1)].Value2 = staging;
+                                i += j;
+                                j = 0;
+                                Progress.Report(i - 1, redundancies.Count);
                             }
-                            p++;
-                            Progress.Report(p, redundancies.Count);
                         }
                         if (j > 0)
                         {
                             oSheet.Range["A" + i, "F" + (i + j - 1)].Value2 = staging;
                             i += j;
                             j = 0;
-                            Progress.Report(i - 1, assetItems.Count);
+                            Progress.Report(i - 1, redundancies.Count);
                         }
 
                         var header = (Excel.Range)oSheet.Rows[1];
