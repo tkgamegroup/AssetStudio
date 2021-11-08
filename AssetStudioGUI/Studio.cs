@@ -157,8 +157,6 @@ namespace AssetStudioGUI
                 }
                 foreach (var asset in objects)
                 {
-                    if (Progress.stopTask) return (null, null);
-
                     var assetItem = new AssetItem(asset);
                     if (outAssetItems != null)
                     {

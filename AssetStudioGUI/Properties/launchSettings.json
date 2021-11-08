@@ -2,7 +2,7 @@
   "profiles": {
     "AssetStudioGUI": {
       "commandName": "Project",
-      "commandLineArgs": "analyze C:\\Client\\Assets\\StreamingAssets\\StreamingResources C:\\Client\\ab_analyze.xlsm",
+      "commandLineArgs": "analyze C:\\SNK\\Assets\\StreamingAssets\\StreamingResources\\effect C:\\SNK\\ab_analyze\\3.xlsm",
       "workingDirectory": "D:\\AssetStudio"
     }
   }

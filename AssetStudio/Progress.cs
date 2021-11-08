@@ -3,7 +3,6 @@
     public static class Progress
     {
         public static IProgress Default = new DummyProgress();
-        public static bool stopTask = false;
 
         public static void Reset(string task)
         {

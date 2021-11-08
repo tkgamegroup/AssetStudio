@@ -129,7 +129,7 @@ namespace AssetStudioGUI
 
                     {
                         var oSheet = (Excel.Worksheet)oWB.Sheets["General"];
-                        oSheet.Cells[1, 2] = Studio.assetsManager.assetBundlesCount.ToString();
+                        oSheet.Cells[1, 2] = Studio.assetsManager.assetBundleInfos.Count.ToString();
                         oSheet.Cells[2, 2] = Studio.assetsManager.assetBundlesTotalSize.ToString();
 
                         var topSizes = new List<StringLongPair>();
@@ -234,8 +234,6 @@ namespace AssetStudioGUI
                         Progress.Reset("Writing assets into excel");
                         foreach (var a in assetItems)
                         {
-                            if (Progress.stopTask) return;
-
                             if (a.Type == ClassIDType.AssetBundleManifest)
                             {
                                 continue;
@@ -278,12 +276,9 @@ namespace AssetStudioGUI
                         int i = 2;
                         int j = 0;
                         string[,] staging = new string[128, 6];
-                        Progress.Reset("Writing redundancies_map into excel");
-                        int p = 0;
+                        Progress.Reset("Writing redundancies into excel");
                         foreach (var ai in redundancies)
                         {
-                            if (Progress.stopTask) return;
-
                             staging[j, 0] = ai.name;
                             staging[j, 1] = ai.type;
                             staging[j, 2] = ai.count.ToString();
@@ -302,6 +297,65 @@ namespace AssetStudioGUI
                         if (j > 0)
                         {
                             oSheet.Range["A" + i, "F" + (i + j - 1)].Value2 = staging;
+                            i += j;
+                            j = 0;
+                            Progress.Report(i - 1, redundancies.Count);
+                        }
+
+                        var header = (Excel.Range)oSheet.Rows[1];
+                        header.EntireColumn.AutoFit();
+                    }
+
+                    {
+                        var oSheet = (Excel.Worksheet)oWB.Sheets["AssetBundles"];
+
+                        foreach (var abi in Studio.assetsManager.assetBundleInfos)
+                        {
+                            string fn_manifest = abi.path + ".manifest";
+                            if (!File.Exists(fn_manifest)) continue;
+
+                            StreamReader manifest = new StreamReader(fn_manifest);
+                            string line;
+                            int tag = 0; // reading nothing, reading assets and reading dependencies
+                            while ((line = manifest.ReadLine()) != null)
+                            {
+                                if (line == "Assets:")
+                                {
+                                    tag = 1;
+                                }
+                                else if (line == "Dependencies:")
+                                {
+                                    tag = 2;
+                                }
+                                else if (line[0] == '-')
+                                {
+                                    if (tag == 1) abi.assetsCount++;
+                                    else if (tag == 2) abi.dependenciesCount++;
+                                }
+                            }
+                        }
+
+                        int i = 2;
+                        int j = 0;
+                        string[,] staging = new string[128, 6];
+                        Progress.Reset("Writing assetbundles into excel");
+                        foreach (var abi in Studio.assetsManager.assetBundleInfos)
+                        {
+                            staging[j, 0] = abi.path;
+                            staging[j, 1] = abi.assetsCount.ToString();
+                            staging[j, 2] = abi.dependenciesCount.ToString();
+                            j++;
+                            if (j >= 128)
+                            {
+                                oSheet.Range["A" + i, "C" + (i + j - 1)].Value2 = staging;
+                                i += j;
+                                j = 0;
+                                Progress.Report(i - 1, redundancies.Count);
+                            }
+                        }
+                        if (j > 0)
+                        {
+                            oSheet.Range["A" + i, "C" + (i + j - 1)].Value2 = staging;
                             i += j;
                             j = 0;
                             Progress.Report(i - 1, redundancies.Count);

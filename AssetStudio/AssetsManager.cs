@@ -7,11 +7,18 @@ using static AssetStudio.ImportHelper;
 
 namespace AssetStudio
 {
+    public class AssetBundleInfo
+    {
+        public string path;
+        public int assetsCount = 0;
+        public int dependenciesCount = 0;
+    }
+
     public class AssetsManager
     {
         public string SpecifyUnityVersion;
         public List<SerializedFile> assetsFileList = new List<SerializedFile>();
-        public int assetBundlesCount = 0;
+        public List<AssetBundleInfo> assetBundleInfos = new List<AssetBundleInfo>();
         public long assetBundlesTotalSize = 0;
 
         internal Dictionary<string, int> assetsFileIndexCache = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
@@ -23,7 +30,7 @@ namespace AssetStudio
 
         public void LoadFiles(params string[] files)
         {
-            assetBundlesCount = 0;
+            assetBundleInfos.Clear();
             assetBundlesTotalSize = 0;
             var path = Path.GetDirectoryName(files[0]);
             MergeSplitAssets(path);
@@ -33,7 +40,7 @@ namespace AssetStudio
 
         public void LoadFolder(string path)
         {
-            assetBundlesCount = 0;
+            assetBundleInfos.Clear();
             assetBundlesTotalSize = 0;
             MergeSplitAssets(path, true);
             var files = Directory.GetFiles(path, "*.*", SearchOption.AllDirectories).ToList();
@@ -53,7 +60,6 @@ namespace AssetStudio
             //use a for loop because list size can change
             for (var i = 0; i < importFiles.Count; i++)
             {
-                if (Progress.stopTask) return;
                 LoadFile(importFiles[i]);
                 Progress.Report(i + 1, importFiles.Count);
             }
@@ -75,7 +81,9 @@ namespace AssetStudio
                     LoadAssetsFile(reader);
                     break;
                 case FileType.BundleFile:
-                    assetBundlesCount++;
+                    var abi = new AssetBundleInfo();
+                    abi.path = fullName;
+                    assetBundleInfos.Add(abi);
                     assetBundlesTotalSize += new FileInfo(fullName).Length;
                     LoadBundleFile(reader);
                     break;
@@ -270,8 +278,6 @@ namespace AssetStudio
             {
                 foreach (var objectInfo in assetsFile.m_Objects)
                 {
-                    if (Progress.stopTask) return;
-
                     var objectReader = new ObjectReader(assetsFile.reader, assetsFile, objectInfo);
                     try
                     {
